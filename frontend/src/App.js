@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import axios from 'axios';
 
@@ -19,8 +19,8 @@ import LinkMinecraft from './components/LinkMinecraft';
 import Dashboard from './components/Dashboard';
 import AdminDashboard from './components/AdminDashboard';
 import Footer from './components/Footer';
-import PrivacyPolicy from './components/PrivacyPolicy'; // Import PrivacyPolicy component
-import TermsOfService from './components/TermsOfService'; // Import TermsOfService component
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 import Wiki from './components/Wiki';
 import AdminWiki from './components/AdminWiki';
 
@@ -35,14 +35,23 @@ function App() {
   const [exchangeRates, setExchangeRates] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Memoize handleLogout to ensure it's a stable dependency for useEffect.
+  const handleLogout = useCallback(() => {
+    setUser(null);
+    setIsAuthenticated(false);
+    setIsAdmin(false);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setCart([]);
+  }, []);
+
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        // Fetch settings and exchange rates in parallel
         const [settingsResponse, ratesResponse] = await Promise.all([
           axios.get('http://localhost:5000/api/v1/settings'),
-          axios.get('https://open.er-api.com/v6/latest/USD') // Base currency is USD
+          axios.get('https://open.er-api.com/v6/latest/USD')
         ]);
 
         if (settingsResponse.data) {
@@ -54,28 +63,31 @@ function App() {
 
       } catch (error) {
         console.error("Could not fetch initial data", error);
-        // Set default settings if API fails
-        if (!settings) setSettings({ store_name: 'AtlasCore', currency: 'USD' });
+        // Use functional update to avoid dependency on settings state
+        setSettings(s => s || { store_name: 'AtlasCore', currency: 'USD' });
       } finally {
         setLoading(false);
       }
     };
 
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    if (token && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-        setIsAdmin(parsedUser.isAdmin === 1 || parsedUser.isAdmin === true);
-      } catch (e) {
-        handleLogout();
-      }
-    }
-    
+    const loadUserFromStorage = () => {
+        const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        if (token && storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            setIsAuthenticated(true);
+            setIsAdmin(parsedUser.isAdmin === 1 || parsedUser.isAdmin === true);
+          } catch (e) {
+            handleLogout();
+          }
+        }
+    };
+
+    loadUserFromStorage();
     fetchInitialData();
-  }, []);
+  }, [handleLogout]);
 
   const handleLogin = (userData = {}) => {
     const { user: loggedInUser, token } = userData;
@@ -86,15 +98,6 @@ function App() {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(loggedInUser));
     }
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    setIsAdmin(false);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setCart([]);
   };
 
   const handleUserUpdate = (updatedUser) => {
@@ -114,7 +117,6 @@ function App() {
     <Router>
       <div className="App">
         <NavBar user={user} isAuthenticated={isAuthenticated} isAdmin={isAdmin} logout={handleLogout} settings={settings} />
-        {/* Wrap Routes in a <main> tag with a 'content' class to ensure proper layout */}
         <main className="content">
           <Routes>
             <Route path="/" element={<LandingPage />} />
@@ -134,7 +136,11 @@ function App() {
             <Route path="/login" element={<Login onLoginSuccess={handleLogin} />} />
             <Route path="/register" element={<Register onLoginSuccess={handleLogin} />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/wiki" element={<Wiki user={user} />} />
+            
+            {/* Updated Wiki Routes */}
+            <Route path="/wiki" element={<Wiki user={user} />}>
+              <Route path=":type/:id" element={<Wiki user={user} />} />
+            </Route>
             
             {isAuthenticated && (
               <>
@@ -156,7 +162,6 @@ function App() {
               </>
             )}
 
-            {/* Routes for Privacy Policy and Terms of Service */}
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
 

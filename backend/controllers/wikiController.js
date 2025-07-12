@@ -6,6 +6,7 @@ const buildCategoryTree = (categories) => {
     const roots = [];
 
     categories.forEach(category => {
+        // Ensure all category properties are included
         map[category.id] = { ...category, children: [] };
     });
 
@@ -34,7 +35,13 @@ exports.getWikiCategories = async (req, res) => {
 
 exports.getWikiPagesByCategory = async (req, res) => {
   try {
-    const pages = await WikiPage.findByCategoryId(req.params.categoryId);
+    const categoryId = req.params.categoryId;
+    let pages;
+    if (categoryId === 'all') {
+        pages = await WikiPage.findAll(); // Implement a findAll method on WikiPage model
+    } else {
+        pages = await WikiPage.findByCategoryId(categoryId);
+    }
     res.status(200).json({ success: true, pages });
   } catch (error) {
     console.error(`Error in getWikiPagesByCategory for category ${req.params.categoryId}:`, error);
@@ -80,9 +87,9 @@ exports.updateWikiCategory = async (req, res) => {
         const category = await WikiCategory.findById(req.params.id);
         if (!category) return res.status(404).json({ success: false, message: 'Category not found' });
         
-        category.name = req.body.name;
-        category.description = req.body.description;
-        category.parentId = req.body.parentId || null;
+        // Update all provided fields, including content
+        Object.assign(category, req.body);
+        
         await category.save();
 
         res.status(200).json({ success: true, category });

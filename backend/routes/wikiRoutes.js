@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect, authorizeAdmin } = require('../middleware/auth');
 const { 
     getWikiCategories, 
+    getWikiCategory, // New
     getWikiPagesByCategory, 
     getWikiPage, 
     createWikiCategory, 
@@ -15,6 +16,7 @@ const {
 
 // Public routes
 router.get('/categories', getWikiCategories);
+router.get('/categories/:id', getWikiCategory); // New route for single category
 router.get('/pages/by-category/:categoryId', getWikiPagesByCategory);
 router.get('/pages/:pageId', getWikiPage);
 

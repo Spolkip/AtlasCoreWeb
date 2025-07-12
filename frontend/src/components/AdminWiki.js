@@ -1,27 +1,132 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import '../css/AdminWiki.css';
 
-const RichTextEditor = ({ value, onChange }) => {
+/**
+ * A rich-text editor component with buttons for common HTML formatting.
+ * It allows admins to easily style wiki page content.
+ * @param {object} props - The component props.
+ * @param {string} props.value - The current HTML content of the editor.
+ * @param {function} props.onChange - The callback function to call when the content changes.
+ * @param {Array} props.pages - A list of available pages for linking.
+ */
+const RichTextEditor = ({ value, onChange, pages }) => {
     const textareaRef = useRef(null);
+    const [showPageLinker, setShowPageLinker] = useState(false);
 
-    const applyTag = (tag) => {
+    const applyTag = (tag, isBlock = false) => {
+        if (!textareaRef.current) return;
         const textarea = textareaRef.current;
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const selectedText = value.substring(start, end);
-        const newText = `${value.substring(0, start)}<${tag}>${selectedText}</${tag}>${value.substring(end)}`;
-        onChange({ target: { name: 'content', value: newText } });
+        const lineBreak = isBlock ? '\n' : '';
+        
+        const newText = `${value.substring(0, start)}${lineBreak}<${tag}>${selectedText}</${tag}>${lineBreak}${value.substring(end)}`;
+        
+        if (onChange) {
+            onChange({ target: { name: 'content', value: newText } });
+        }
+    };
+    
+    const applyList = (listTag) => {
+        if (!textareaRef.current) return;
+        const textarea = textareaRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = value.substring(start, end);
+        const lines = selectedText.split('\n').filter(line => line.trim() !== '');
+        if (lines.length === 0) return;
+
+        const listItems = lines.map(line => `  <li>${line.trim()}</li>`).join('\n');
+        const listHtml = `\n<${listTag}>\n${listItems}\n</${listTag}>\n`;
+        
+        const newText = `${value.substring(0, start)}${listHtml}${value.substring(end)}`;
+        if (onChange) {
+            onChange({ target: { name: 'content', value: newText } });
+        }
+    };
+
+    const insertTag = (tag) => {
+        if (!textareaRef.current) return;
+        const textarea = textareaRef.current;
+        const start = textarea.selectionStart;
+        const newText = `${value.substring(0, start)}\n${tag}\n${value.substring(start)}`;
+        if (onChange) {
+            onChange({ target: { name: 'content', value: newText } });
+        }
+    };
+
+    const applyLink = () => {
+        const url = prompt('Enter the URL:', 'https://');
+        if (!url) return;
+
+        if (!textareaRef.current) return;
+        const textarea = textareaRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = value.substring(start, end) || 'link text';
+        
+        const newText = `${value.substring(0, start)}<a href="${url}" target="_blank">${selectedText}</a>${value.substring(end)}`;
+        if (onChange) {
+            onChange({ target: { name: 'content', value: newText } });
+        }
+    };
+
+    const linkPage = (pageId) => {
+        const selectedPage = pages.find(p => p.id === pageId);
+        if (!selectedPage) return;
+
+        if (!textareaRef.current) return;
+        const textarea = textareaRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = value.substring(start, end) || selectedPage.title;
+        
+        const newText = `${value.substring(0, start)}<a href="/wiki/page/${selectedPage.id}">${selectedText}</a>${value.substring(end)}`;
+        if (onChange) {
+            onChange({ target: { name: 'content', value: newText } });
+        }
+        setShowPageLinker(false);
     };
 
     return (
         <div className="editor-container">
             <div className="editor-toolbar">
-                <button type="button" onClick={() => applyTag('b')}><b>B</b></button>
-                <button type="button" onClick={() => applyTag('i')}><i>I</i></button>
-                <button type="button" onClick={() => applyTag('u')}><u>U</u></button>
+                <button type="button" title="Bold" onClick={() => applyTag('b')}><b>B</b></button>
+                <button type="button" title="Italic" onClick={() => applyTag('i')}><i>I</i></button>
+                <button type="button" title="Underline" onClick={() => applyTag('u')}><u>U</u></button>
+                <div className="toolbar-divider"></div>
+                <button type="button" title="Heading 2" onClick={() => applyTag('h2', true)}>H2</button>
+                <button type="button" title="Heading 3" onClick={() => applyTag('h3', true)}>H3</button>
+                <button type="button" title="Paragraph" onClick={() => applyTag('p', true)}>P</button>
+                <div className="toolbar-divider"></div>
+                <button type="button" title="Unordered List" onClick={() => applyList('ul')}>UL</button>
+                <button type="button" title="Ordered List" onClick={() => applyList('ol')}>OL</button>
+                <div className="toolbar-divider"></div>
+                <button type="button" title="Horizontal Rule" onClick={() => insertTag('<hr />')}>HR</button>
+                <button type="button" title="Link" onClick={applyLink}>Link</button>
+                <div className="page-linker-container">
+                    <button type="button" title="Link to Page" onClick={() => setShowPageLinker(!showPageLinker)}>Link Page</button>
+                    {showPageLinker && (
+                        <div className="page-linker-dropdown">
+                            {pages.length > 0 ? pages.map(page => (
+                                <div key={page.id} onClick={() => linkPage(page.id)} className="page-linker-item">
+                                    {page.title}
+                                </div>
+                            )) : <div className="page-linker-item">No pages to link.</div>}
+                        </div>
+                    )}
+                </div>
             </div>
-            <textarea ref={textareaRef} name="content" value={value} onChange={onChange} placeholder="Page content (HTML allowed)"></textarea>
+            <textarea 
+                ref={textareaRef} 
+                name="content" 
+                value={value} 
+                onChange={onChange} 
+                placeholder="Page content (HTML is allowed for formatting)"
+                rows="20"
+            />
         </div>
     );
 };
@@ -29,129 +134,120 @@ const RichTextEditor = ({ value, onChange }) => {
 
 const AdminWiki = () => {
     const [categories, setCategories] = useState([]);
-    const [pages, setPages] = useState([]);
+    const [allPages, setAllPages] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(null);
-    
-    const [newCategory, setNewCategory] = useState({ name: '', description: '', parentId: '' });
-    const [newPage, setNewPage] = useState({ title: '', content: '', categoryId: '' });
-    
     const [editingCategory, setEditingCategory] = useState(null);
     const [editingPage, setEditingPage] = useState(null);
-
+    
+    const [newCategory, setNewCategory] = useState({ name: '', description: '', parentId: '' });
+    
+    const [activeTab, setActiveTab] = useState('content');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    const token = localStorage.getItem('token');
-    const config = { headers: { Authorization: `Bearer ${token}` } };
-
-    const clearMessages = () => {
+    const fetchData = useCallback(() => {
+        const token = localStorage.getItem('token');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        
+        setLoading(true);
         setError('');
         setSuccess('');
-    };
 
-    const fetchData = async () => {
-        setLoading(true);
-        clearMessages();
-        try {
-            const catResponse = await axios.get('http://localhost:5000/api/v1/wiki/categories', config);
+        Promise.all([
+            axios.get('http://localhost:5000/api/v1/wiki/categories', config),
+            axios.get('http://localhost:5000/api/v1/wiki/pages/by-category/all', config)
+        ]).then(([catResponse, pageResponse]) => {
             if (catResponse.data.success) {
                 const flattenCategories = (cats, level = 0) => {
                     let flat = [];
                     cats.forEach(cat => {
-                        flat.push({id: cat.id, name: `${'--'.repeat(level)} ${cat.name}`, originalName: cat.name, description: cat.description, parentId: cat.parentId});
+                        flat.push({ ...cat, name: `${'--'.repeat(level)} ${cat.name}`, originalName: cat.name });
                         if (cat.children && cat.children.length > 0) {
                             flat = flat.concat(flattenCategories(cat.children, level + 1));
                         }
                     });
                     return flat;
                 }
-                const flatCats = flattenCategories(catResponse.data.categories);
-                setCategories(flatCats);
-
-                if (flatCats.length > 0 && !newPage.categoryId) {
-                    setNewPage(p => ({ ...p, categoryId: flatCats[0].id }));
-                }
+                setCategories(flattenCategories(catResponse.data.categories));
             }
-        } catch (err) {
-            setError(err.response?.data?.message || 'Failed to load wiki categories.');
-        } finally {
+            if (pageResponse.data.success) {
+                setAllPages(pageResponse.data.pages);
+            }
+        }).catch(err => {
+            setError(err.response?.data?.message || 'Failed to load wiki data.');
+        }).finally(() => {
             setLoading(false);
-        }
-    };
+        });
+    }, []);
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [fetchData]);
 
-    const handleSelectCategory = async (category) => {
-        clearMessages();
+    const handleSelectCategory = (category) => {
+        setSuccess('');
+        setError('');
         setSelectedCategory(category);
-        setNewPage(p => ({ ...p, categoryId: category.id }));
+        setEditingCategory({ ...category });
         setEditingPage(null);
-        try {
-            const pagesResponse = await axios.get(`http://localhost:5000/api/v1/wiki/pages/by-category/${category.id}`, config);
-            if (pagesResponse.data.success) {
-                setPages(pagesResponse.data.pages);
-            }
-        } catch (err) {
-            setError(`Failed to load pages for ${category.name}.`);
-            setPages([]);
-        }
+        setActiveTab('content');
+    };
+
+    const handleSelectPageForEditing = (page) => {
+        setEditingPage(page);
+        setActiveTab('pages');
     };
 
     const handleInputChange = (setter, field) => (e) => {
         setter(prev => ({ ...prev, [field]: e.target.value }));
     };
-    
-    const handleEditorChange = (setter, field) => (e) => {
-        setter(prev => ({ ...prev, [field]: e.target.value }));
+
+    const handleEditorChange = (e) => {
+        const { name, value } = e.target;
+        if (activeTab === 'content' && editingCategory) {
+            setEditingCategory(prev => ({ ...prev, [name]: value }));
+        } else if (activeTab === 'pages' && editingPage) {
+            setEditingPage(prev => ({ ...prev, [name]: value }));
+        }
     };
 
-    // --- Category CRUD ---
     const handleAddCategory = async (e) => {
         e.preventDefault();
-        clearMessages();
+        const token = localStorage.getItem('token');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
         try {
-            const { data } = await axios.post('http://localhost:5000/api/v1/wiki/categories', newCategory, config);
-            if (data.success) {
-                fetchData();
-                setNewCategory({ name: '', description: '', parentId: '' });
-                setSuccess('Category added successfully.');
-            }
+            await axios.post('http://localhost:5000/api/v1/wiki/categories', { ...newCategory, content: '' }, config);
+            fetchData();
+            setNewCategory({ name: '', description: '', parentId: '' });
+            setSuccess('Category added successfully.');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to add category.');
         }
     };
 
-    const handleUpdateCategory = async (e) => {
+    const handleSaveCategory = async (e) => {
         e.preventDefault();
-        clearMessages();
+        const token = localStorage.getItem('token');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
         try {
-            const categoryToUpdate = {
-                name: editingCategory.name,
-                description: editingCategory.description,
-                parentId: editingCategory.parentId || null
-            };
-            await axios.put(`http://localhost:5000/api/v1/wiki/categories/${editingCategory.id}`, categoryToUpdate, config);
+            await axios.put(`http://localhost:5000/api/v1/wiki/categories/${editingCategory.id}`, editingCategory, config);
             fetchData();
-            setEditingCategory(null);
-            setSuccess('Category updated successfully.');
+            setSuccess('Category content saved successfully.');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to update category.');
+            setError(err.response?.data?.message || 'Failed to save category.');
         }
     };
 
     const handleDeleteCategory = async (categoryId) => {
-        if (window.confirm('Are you sure? Deleting a category will also delete all its pages.')) {
-            clearMessages();
+        if (window.confirm('Are you sure? Deleting a category will also delete its pages.')) {
+            const token = localStorage.getItem('token');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
             try {
                 await axios.delete(`http://localhost:5000/api/v1/wiki/categories/${categoryId}`, config);
                 fetchData();
-                if (selectedCategory?.id === categoryId) {
-                    setSelectedCategory(null);
-                    setPages([]);
-                }
+                setSelectedCategory(null);
+                setEditingCategory(null);
                 setSuccess('Category deleted successfully.');
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to delete category.');
@@ -159,41 +255,39 @@ const AdminWiki = () => {
         }
     };
 
-    // --- Page CRUD ---
-    const handleAddPage = async (e) => {
+    const handleSavePage = async (e) => {
         e.preventDefault();
-        clearMessages();
-        try {
-            const { data } = await axios.post('http://localhost:5000/api/v1/wiki/pages', newPage, config);
-            if (data.success) {
-                setPages([...pages, data.page]);
-                setNewPage({ title: '', content: '', categoryId: newPage.categoryId });
-                setSuccess('Page added successfully.');
-            }
-        } catch (err) {
-            setError(err.response?.data?.message || 'Failed to add page.');
-        }
-    };
+        const token = localStorage.getItem('token');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const pageToSave = {
+            title: editingPage.title,
+            content: editingPage.content,
+            categoryId: 'uncategorized'
+        };
 
-    const handleUpdatePage = async (e) => {
-        e.preventDefault();
-        clearMessages();
         try {
-            await axios.put(`http://localhost:5000/api/v1/wiki/pages/${editingPage.id}`, editingPage, config);
-            setPages(pages.map(p => p.id === editingPage.id ? editingPage : p));
+            if (editingPage.id) {
+                await axios.put(`http://localhost:5000/api/v1/wiki/pages/${editingPage.id}`, pageToSave, config);
+                setSuccess('Page updated successfully.');
+            } else {
+                await axios.post('http://localhost:5000/api/v1/wiki/pages', pageToSave, config);
+                setSuccess('Page created successfully.');
+            }
+            fetchData();
             setEditingPage(null);
-            setSuccess('Page updated successfully.');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to update page.');
+            setError(err.response?.data?.message || 'Failed to save page.');
         }
     };
 
     const handleDeletePage = async (pageId) => {
         if (window.confirm('Are you sure you want to delete this page?')) {
-            clearMessages();
+            const token = localStorage.getItem('token');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
             try {
                 await axios.delete(`http://localhost:5000/api/v1/wiki/pages/${pageId}`, config);
-                setPages(pages.filter(p => p.id !== pageId));
+                fetchData();
+                if(editingPage?.id === pageId) setEditingPage(null);
                 setSuccess('Page deleted successfully.');
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to delete page.');
@@ -214,7 +308,6 @@ const AdminWiki = () => {
                     <h2>Categories</h2>
                     <form onSubmit={handleAddCategory} className="admin-wiki-form">
                         <input type="text" name="name" value={newCategory.name} onChange={handleInputChange(setNewCategory, 'name')} placeholder="New Category Name" required />
-                        <input type="text" name="description" value={newCategory.description} onChange={handleInputChange(setNewCategory, 'description')} placeholder="Category Description" />
                         <select name="parentId" value={newCategory.parentId} onChange={handleInputChange(setNewCategory, 'parentId')}>
                             <option value="">None (Top Level)</option>
                             {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
@@ -223,65 +316,67 @@ const AdminWiki = () => {
                     </form>
                     <div className="admin-wiki-list">
                         {categories.map(cat => (
-                            <div key={cat.id} className={`admin-wiki-list-item ${selectedCategory?.id === cat.id ? 'selected' : ''}`}>
-                                {editingCategory?.id === cat.id ? (
-                                    <form onSubmit={handleUpdateCategory} className="edit-form-inline">
-                                        <input type="text" value={editingCategory.name} onChange={handleInputChange(setEditingCategory, 'name')} />
-                                        <select name="parentId" value={editingCategory.parentId || ''} onChange={handleInputChange(setEditingCategory, 'parentId')}>
-                                            <option value="">None (Top Level)</option>
-                                            {categories.filter(c => c.id !== cat.id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
-                                        <button type="submit" className="mc-button small">Save</button>
-                                        <button type="button" onClick={() => setEditingCategory(null)} className="mc-button small danger">Cancel</button>
-                                    </form>
-                                ) : (
-                                    <>
-                                        <span onClick={() => handleSelectCategory(cat)}>{cat.name}</span>
-                                        <div className="admin-wiki-actions">
-                                            <button onClick={() => setEditingCategory({...cat, name: cat.originalName})} className="mc-button small">Edit</button>
-                                            <button onClick={() => handleDeleteCategory(cat.id)} className="mc-button small danger">Delete</button>
-                                        </div>
-                                    </>
-                                )}
+                            <div key={cat.id} className={`admin-wiki-list-item ${selectedCategory?.id === cat.id ? 'selected' : ''}`} onClick={() => handleSelectCategory(cat)}>
+                                <span>{cat.name}</span>
+                                <div className="admin-wiki-actions">
+                                    <button onClick={(e) => {e.stopPropagation(); handleDeleteCategory(cat.id)}} className="mc-button small danger">Del</button>
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 <div className="admin-wiki-section">
-                    <h2>Pages {selectedCategory && `in ${selectedCategory.originalName}`}</h2>
                     {selectedCategory ? (
                         <>
-                            <form onSubmit={handleAddPage} className="admin-wiki-form">
-                                <input type="text" name="title" value={newPage.title} onChange={handleInputChange(setNewPage, 'title')} placeholder="New Page Title" required />
-                                <RichTextEditor value={newPage.content} onChange={handleEditorChange(setNewPage, 'content')} />
-                                <button type="submit" className="mc-button primary">Add Page</button>
-                            </form>
-                             <div className="admin-wiki-list">
-                                {pages.map(page => (
-                                     <div key={page.id} className="admin-wiki-list-item">
-                                         {editingPage?.id === page.id ? (
-                                             <form onSubmit={handleUpdatePage} className="edit-form-inline">
-                                                 <input type="text" value={editingPage.title} onChange={handleInputChange(setEditingPage, 'title')} />
-                                                 <RichTextEditor value={editingPage.content} onChange={handleEditorChange(setEditingPage, 'content')} />
-                                                 <button type="submit" className="mc-button small">Save</button>
-                                                 <button type="button" onClick={() => setEditingPage(null)} className="mc-button small danger">Cancel</button>
-                                             </form>
-                                         ) : (
-                                             <>
-                                                <span>{page.title}</span>
-                                                <div className="admin-wiki-actions">
-                                                    <button onClick={() => setEditingPage(page)} className="mc-button small">Edit</button>
-                                                    <button onClick={() => handleDeletePage(page.id)} className="mc-button small danger">Delete</button>
-                                                </div>
-                                             </>
-                                         )}
-                                     </div>
-                                ))}
+                            <div className="editor-tabs">
+                                <button className={`tab-button ${activeTab === 'content' ? 'active' : ''}`} onClick={() => setActiveTab('content')}>Edit Category Content</button>
+                                <button className={`tab-button ${activeTab === 'pages' ? 'active' : ''}`} onClick={() => setActiveTab('pages')}>Manage Linkable Pages</button>
                             </div>
+
+                            {activeTab === 'content' && editingCategory && (
+                                <form onSubmit={handleSaveCategory} className="admin-wiki-form">
+                                    <h3>Editing Content for: {editingCategory.originalName}</h3>
+                                    <input type="text" value={editingCategory.name} onChange={handleInputChange(setEditingCategory, 'name')} placeholder="Category Name" />
+                                    <input type="text" value={editingCategory.description || ''} onChange={handleInputChange(setEditingCategory, 'description')} placeholder="Category Description" />
+                                    <RichTextEditor value={editingCategory.content || ''} onChange={handleEditorChange} pages={allPages} />
+                                    <button type="submit" className="mc-button primary">Save Category Content</button>
+                                </form>
+                            )}
+
+                            {activeTab === 'pages' && (
+                                <div>
+                                    {editingPage ? (
+                                        <form onSubmit={handleSavePage} className="admin-wiki-form">
+                                            <h3>Editing Page: {editingPage.id ? editingPage.title : 'New Page'}</h3>
+                                            <input type="text" name="title" value={editingPage.title} onChange={handleInputChange(setEditingPage, 'title')} required />
+                                            <RichTextEditor value={editingPage.content || ''} onChange={(e) => setEditingPage(p => ({...p, content: e.target.value}))} pages={allPages} />
+                                            <div className="admin-wiki-actions">
+                                                <button type="submit" className="mc-button primary">Save Page</button>
+                                                <button type="button" onClick={() => setEditingPage(null)} className="mc-button danger">Cancel</button>
+                                            </div>
+                                        </form>
+                                    ) : (
+                                        <>
+                                            <h3>Manage Linkable Pages</h3>
+                                            <button onClick={() => setEditingPage({ title: '', content: '' })} className="mc-button primary" style={{marginBottom: '1rem'}}>Create New Page</button>
+                                            <div className="admin-wiki-list">
+                                                {allPages.length > 0 ? allPages.map(page => (
+                                                    <div key={page.id} className="admin-wiki-list-item">
+                                                        <span className="page-title" onClick={() => handleSelectPageForEditing(page)}>{page.title}</span>
+                                                        <div className="admin-wiki-actions">
+                                                            <button onClick={() => handleDeletePage(page.id)} className="mc-button small danger">Delete</button>
+                                                        </div>
+                                                    </div>
+                                                )) : <p>No pages created yet.</p>}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </>
                     ) : (
-                        <p>Select a category to manage its pages.</p>
+                        <h2>Select a category to begin editing.</h2>
                     )}
                 </div>
             </div>

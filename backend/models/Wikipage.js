@@ -8,7 +8,8 @@ class WikiPage {
     this.id = data.id || null;
     this.title = data.title;
     this.content = data.content;
-    this.categoryId = data.categoryId;
+    // A page might not belong to a category if it's just a linkable entity
+    this.categoryId = data.categoryId || 'uncategorized'; 
   }
 
   async save() {
@@ -30,6 +31,12 @@ class WikiPage {
   static async findByCategoryId(categoryId) {
     const q = query(wikiPagesCollection, where('categoryId', '==', categoryId));
     const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => new WikiPage({ id: doc.id, ...doc.data() }));
+  }
+
+  // New method to get all pages
+  static async findAll() {
+    const querySnapshot = await getDocs(wikiPagesCollection);
     return querySnapshot.docs.map(doc => new WikiPage({ id: doc.id, ...doc.data() }));
   }
 

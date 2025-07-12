@@ -9,14 +9,16 @@ class WikiCategory {
     this.id = data.id || null;
     this.name = data.name;
     this.description = data.description || null;
-    this.parentId = data.parentId || null; // Add parentId for sub-categories
+    this.parentId = data.parentId || null;
+    this.content = data.content || ''; // Add content field
   }
 
   async save() {
     const data = { 
         name: this.name, 
         description: this.description,
-        parentId: this.parentId 
+        parentId: this.parentId,
+        content: this.content // Ensure content is saved
     };
     if (this.id) {
       await updateDoc(doc(wikiCategoriesCollection, this.id), data);
