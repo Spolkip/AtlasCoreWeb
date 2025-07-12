@@ -1,0 +1,327 @@
+.wiki-container {
+    display: flex;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 2rem auto;
+    color: #fff;
+    font-family: 'VT323', monospace;
+    padding: 1rem;
+}
+
+.wiki-sidebar {
+    flex: 0 0 300px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 1.5rem;
+    border: 3px solid #000;
+    box-shadow: inset 0 0 15px #000, 0 0 10px rgba(0,0,0,0.7);
+    align-self: flex-start;
+}
+
+.wiki-sidebar h2 {
+    font-size: 2.5rem;
+    color: #FFAA00;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    text-shadow: 2px 2px #000;
+}
+
+.wiki-category-list, .wiki-subcategory-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.wiki-category-item .category-button-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.wiki-category-item button {
+    flex-grow: 1;
+    background-color: #3a3a3a;
+    border: 2px solid #000;
+    color: #fff;
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all 0.1s ease-in-out;
+}
+
+.wiki-category-item button:hover {
+    background-color: #555;
+}
+
+.wiki-category-item button.active {
+    background-color: #27ae60;
+    color: #FFFF55;
+}
+
+.expand-icon {
+    display: inline-block;
+    margin-right: 0.5rem;
+    transition: transform 0.2s ease-in-out;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.expand-icon.expanded {
+    transform: rotate(90deg);
+}
+
+.wiki-subcategory-list {
+    margin-left: 1rem;
+    padding-left: 1rem;
+    border-left: 3px solid #555;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.wiki-subcategory-list.expanded {
+    max-height: 1000px; /* Or a large enough value */
+    transition: max-height 0.5s ease-in-out;
+}
+
+
+.wiki-main-content {
+    position: relative;
+    flex-grow: 1;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 2.5rem;
+    border: 3px solid #000;
+    box-shadow: inset 0 0 15px #000, 0 0 10px rgba(0,0,0,0.7);
+    min-height: 70vh;
+}
+
+.admin-wiki-button {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    font-family: 'VT323', monospace;
+    padding: 10px 20px !important;
+    font-size: 1.2rem !important;
+    color: white;
+    text-decoration: none;
+    background-color: #f0ad4e;
+    border: 2px solid #000;
+    box-shadow: 3px 3px 0 #000;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.admin-wiki-button:hover {
+    background-color: #ec971f;
+    transform: translateY(-1px);
+    box-shadow: 4px 4px 0 #000;
+}
+
+.wiki-page-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+}
+
+.wiki-page-item button {
+    width: 100%;
+    background: rgba(44, 62, 80, 0.6);
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    color: #3498db;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    text-align: left;
+    font-family: 'VT323', monospace;
+    font-size: 1.6rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.wiki-page-item button:hover {
+    background-color: rgba(52, 73, 94, 0.8);
+    border-color: #FFAA00;
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 0 #000;
+}
+
+.wiki-page-content h1 {
+    font-size: 3.5rem;
+    color: #FFAA00;
+    border-bottom: 3px solid #555;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px #000;
+}
+
+.wiki-page-content p {
+    font-size: 1.3rem;
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+}
+
+.wiki-page-content a {
+    color: #3498db;
+    text-decoration: underline;
+}
+
+.wiki-page-content a:hover {
+    color: #FFFF55;
+}
+
+.wiki-page-content ul, .wiki-page-content ol {
+    padding-left: 2rem;
+    font-size: 1.2rem;
+}
+
+.wiki-page-content li {
+    margin-bottom: 0.5rem;
+}
+
+// frontend/src/css/AdminWiki.css
+.admin-wiki-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    color: #fff;
+    font-family: 'VT323', monospace;
+}
+
+.admin-wiki-container h1 {
+    text-align: center;
+    font-size: 3rem;
+    color: #FFAA00;
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px #000;
+}
+
+.admin-wiki-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2rem;
+}
+
+.admin-wiki-section {
+    background-color: rgba(0, 0, 0, 0.6);
+    padding: 2rem;
+    border: 3px solid #000;
+    box-shadow: 0 0 20px rgba(0,0,0,0.7);
+}
+
+.admin-wiki-section h2 {
+    font-size: 2.2rem;
+    color: #FFFF55;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #555;
+    padding-bottom: 0.5rem;
+    text-shadow: 1px 1px #000;
+}
+
+.admin-wiki-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.admin-wiki-form input,
+.admin-wiki-form textarea,
+.admin-wiki-form select {
+    width: 100%;
+    padding: 0.75rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+    background-color: #2a2a2a;
+    border: 2px solid #000;
+    color: #fff;
+    box-sizing: border-box;
+}
+
+.admin-wiki-form textarea {
+    min-height: 150px;
+    resize: vertical;
+}
+
+.admin-wiki-list {
+    margin-top: 1.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.admin-wiki-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 1rem;
+    border: 2px solid #444;
+    margin-bottom: 0.5rem;
+}
+
+.admin-wiki-list-item span {
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+.admin-wiki-list-item.selected {
+    border-left: 5px solid #FFAA00;
+    background-color: rgba(255, 170, 0, 0.1);
+}
+
+.admin-wiki-actions button {
+    margin-left: 0.5rem;
+}
+
+.edit-form-inline {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.edit-form-inline input, .edit-form-inline select {
+    flex-grow: 1;
+}
+
+.edit-form-inline button {
+    flex-shrink: 0;
+}
+
+.editor-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.editor-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    background-color: #2a2a2a;
+    padding: 0.5rem;
+    border: 2px solid #000;
+    border-bottom: none;
+}
+
+.editor-toolbar button {
+    font-family: 'VT323', monospace;
+    background-color: #7f8c8d;
+    border: 2px solid #000;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+}
+
+.editor-toolbar button:hover {
+    background-color: #95a5a6;
+}
+
+
+@media (max-width: 900px) {
+    .admin-wiki-grid {
+        grid-template-columns: 1fr;
+    }
+}
