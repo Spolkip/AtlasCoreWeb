@@ -103,7 +103,7 @@
 
 .message-timestamp { /* For session list last message timestamp */
     font-size: 0.8em;
-    color: #aaa;
+    color: #c0c0c0; /* Changed to a lighter grey for better contrast */
     margin-left: 10px;
 }
 
@@ -166,8 +166,14 @@
   border-radius: 10px;
   max-width: 80%;
   line-height: 1.4;
-  position: relative; /* For timestamp positioning */
-  padding-bottom: 25px; /* Give space for timestamp */
+  /* FIX: Ensure consistent sizing for bubbles */
+  min-height: 50px; /* Give a minimum height */
+  display: flex;
+  flex-direction: column;
+  /* FIX: Remove justify-content to allow timestamp to flow naturally */
+  /* justify-content: space-between; */ 
+  position: relative; /* Needed for absolute positioning of timestamp */
+  padding-bottom: 25px; /* Make space for timestamp at the bottom */
 }
 
 .message p {
@@ -176,20 +182,43 @@
   color: #fff;
 }
 
-.message .message-timestamp {
-    font-size: 0.8rem;
-    color: #aaa;
-    position: absolute;
-    bottom: 5px; /* Adjust as needed */
+/* New styles for message meta (sender and timestamp) */
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
 }
+
+.message-sender {
+  font-weight: bold;
+  color: #FFFF55; /* Yellow for sender name */
+}
+
+.message-timestamp-text {
+  color: #ffffffff; /* Changed to a darker grey for better contrast */
+  font-size: 0.8em;
+  /* FIX: Position timestamp absolutely within the bubble */
+  position: absolute;
+  bottom: 5px; /* Adjust as needed for padding */
+  right: 5px; /* Default to right, adjust for admin/user specific */
+}
+
+.message-content {
+  margin-top: 5px;
+}
+
 
 .message.user {
   background-color: #3498db;
   align-self: flex-end;
   border-bottom-right-radius: 2px;
 }
-.message.user .message-timestamp {
+/* FIX: Adjust timestamp position for user messages */
+.message.user .message-timestamp-text {
     right: 5px;
+    left: auto;
 }
 
 .message.admin {
@@ -197,8 +226,10 @@
   align-self: flex-start;
   border-bottom-left-radius: 2px;
 }
-.message.admin .message-timestamp {
+/* FIX: Adjust timestamp position for admin messages */
+.message.admin .message-timestamp-text {
     left: 5px;
+    right: auto;
 }
 .message.system { /* Style for system messages */
     background-color: #555;

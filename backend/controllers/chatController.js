@@ -1,16 +1,21 @@
+// backend/controllers/chatController.js
 const Chat = require('../models/Chat');
-const User = require('../models/User');
+const User = require('../models/User'); // Ensure User model is imported
 
 // @desc    Get chat history for a user or guest
 // @route   GET /api/v1/chat/history
 // @access  Public/Private
 exports.getChatHistory = async (req, res) => {
   try {
-    const sessionId = (req.user && req.user.isAdmin && req.query.userId) 
-                     ? req.query.userId 
+    // FIX: Changed req.user.isAdmin to req.user.is_admin === 1 to correctly identify admin users
+    // This ensures an admin viewing another user's chat history uses the correct sessionId.
+    const sessionId = (req.user && req.user.is_admin === 1 && req.query.userId)
+                     ? req.query.userId
                      : (req.user ? req.user.id : req.query.guestId);
     
     if (!sessionId) {
+        // Log explicitly if sessionId is missing for debugging purposes
+        console.error('getChatHistory Error: sessionId is missing. user:', req.user, 'query:', req.query);
         return res.status(400).json({ success: false, message: 'User or guest ID is required.' });
     }
 
@@ -18,7 +23,13 @@ exports.getChatHistory = async (req, res) => {
     
     res.status(200).json({ success: true, messages });
   } catch (error) {
-    console.error("Error in getChatHistory:", error);
+    // Detailed error logging for debugging purposes
+    console.error('--- DETAILED ERROR in getChatHistory ---');
+    console.error('Error object:', error);
+    if (error.code) console.error('Firebase Error Code:', error.code);
+    if (error.message) console.error('Error Message:', error.message);
+    if (error.stack) console.error('Error Stack:', error.stack);
+    console.error('--- END DETAILED ERROR ---');
     res.status(500).json({ success: false, message: 'Server error fetching chat history.' });
   }
 };
@@ -38,7 +49,8 @@ exports.sendMessage = async (req, res) => {
     }
 
     // Determine sender and session ID
-    if (req.user && req.user.isAdmin) {
+    // FIX: Changed req.user.isAdmin to req.user.is_admin === 1 to correctly identify admin users
+    if (req.user && req.user.is_admin === 1) { // Correctly check admin status based on User model field
         sender = 'admin';
         chatSessionId = targetUserId; 
         adminUsername = req.user.username; // Get admin username

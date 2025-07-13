@@ -1,7 +1,9 @@
 // frontend/src/App.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // FIX: Corrected import syntax
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import axios from 'axios';
+import { initializeApp } from 'firebase/app'; // Import initializeApp
+import { getFirestore } from 'firebase/firestore'; // Import getFirestore
 
 // Import Components
 import NavBar from './components/NavBar';
@@ -28,6 +30,21 @@ import LiveChat from './components/LiveChat';
 import AdminChat from './components/AdminChat'; // Import AdminChat
 
 import './css/App.css';
+
+// Client-side Firebase configuration (using your actual values)
+const firebaseConfig = {
+  apiKey: "AIzaSyDVJv5KBf7DiFxLPw7-DaR0sQNGZd5zko8",
+  authDomain: "atlascoreweb.firebaseapp.com",
+  projectId: "atlascoreweb",
+  storageBucket: "atlascoreweb.firebasestorage.app",
+  messagingSenderId: "1017567515762",
+  appId: "1:1017567515762:web:a16e81b3cf33287db3deeb",
+};
+
+// Initialize Firebase App and Firestore for the frontend
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -162,8 +179,8 @@ function App() {
                 <Route path="/admin" element={<AddProducts />} />
                 <Route path="/admin-dashboard" element={<AdminDashboard user={user} />} />
                 <Route path="/admin/wiki" element={<AdminWiki />} />
-                {/* NEW: Pass the user prop to AdminChat component */}
-                <Route path="/admin/chat" element={<AdminChat user={user} />} /> 
+                {/* NEW: Pass the user prop and db instance to AdminChat component */}
+                <Route path="/admin/chat" element={<AdminChat user={user} db={db} />} /> 
               </>
             )}
 

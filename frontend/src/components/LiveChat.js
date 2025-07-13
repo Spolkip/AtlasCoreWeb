@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../css/LiveChat.css';
+import { getFirestore, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; // Import Firestore functions
 
 const LiveChat = ({ user, isAdmin }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,47 +25,62 @@ const LiveChat = ({ user, isAdmin }) => {
 
   useEffect(scrollToBottom, [messages]);
 
-  // Fetch chat history when the chat window opens
-  useEffect(() => {
-    if (isOpen && user && token) {
-      const fetchHistory = async () => {
-        try {
-          const config = { headers: { Authorization: `Bearer ${token}` } };
-          const { data } = await axios.get('http://localhost:5000/api/v1/chat/history', config);
-          if (data.success && data.messages.length > 0) {
-            const formattedMessages = data.messages.map(msg => ({
-                ...msg,
-                // Ensure timestamp is a JS Date object for consistency
-                timestamp: msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date()
-            }));
-            setMessages(formattedMessages);
-          } else if (data.success) {
-             // If there's no history, start with a fresh greeting
-             setMessages([
-                {
-                  sender: 'admin',
-                  text: `Hello ${user.username}! How can I help you today?`,
-                  timestamp: new Date()
-                },
-              ]);
-          }
-        } catch (error) {
-          console.error("Failed to fetch chat history:", error);
-        }
-      };
-      fetchHistory();
-    } else if (isOpen && !user) {
-        // Handle guest users
-        setMessages([
-            {
-              sender: 'admin',
-              text: `Hello Guest! How can I help you today?`,
-              timestamp: new Date()
-            },
-          ]);
-    }
-  }, [isOpen, user, token]);
+  // Initialize Firestore DB instance for the user side
+  // This assumes db is available from the global scope or context (e.g., from App.js)
+  const db = getFirestore(); // Assuming db is available from the global scope or context
 
+  // Effect to handle chat window open/close and real-time message listening
+  useEffect(() => {
+    if (!isOpen || isAdmin || !db) return; // Only run if chat is open, not admin, and db is initialized
+
+    let sessionId;
+    if (user) {
+      sessionId = user.id;
+    } else {
+      // For guest users, generate a unique ID if one doesn't exist in session storage
+      sessionId = sessionStorage.getItem('guestId');
+      if (!sessionId) {
+        sessionId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+        sessionStorage.setItem('guestId', sessionId);
+      }
+    }
+
+    // Set up the real-time listener for messages
+    const q = query(
+      collection(db, 'chats'),
+      where('userId', '==', sessionId),
+      orderBy('timestamp', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newMessages = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp?.toDate ? doc.data().timestamp.toDate() : new Date() // Convert Firestore Timestamp to JS Date
+      }));
+
+      // If no messages exist for a new session, add an initial greeting from admin
+      if (newMessages.length === 0) {
+        setMessages([
+          {
+            sender: 'admin',
+            message: `Hello ${user ? user.username : 'Guest'}! How can I help you today?`,
+            timestamp: new Date()
+          },
+        ]);
+      } else {
+        setMessages(newMessages);
+      }
+    }, (error) => {
+      console.error("Error listening to chat messages (user side):", error);
+      // Optionally display an error to the user in the chat window
+      setMessages(prev => [...prev, { sender: 'system', message: "Error: Could not load chat messages." }]);
+    });
+
+    // Cleanup function: unsubscribe from the listener when the chat window closes
+    return () => unsubscribe();
+
+  }, [isOpen, user, isAdmin, db]); // Dependencies for this effect
 
   const toggleChat = () => {
     if (isAdmin) {
@@ -77,34 +93,36 @@ const LiveChat = ({ user, isAdmin }) => {
   const handleSend = async (text) => {
     if (text.trim() === '') return;
 
-    const userMessage = { sender: 'user', text };
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
-    setInputValue('');
-
-    // Save user message to the backend if logged in
-    if (user && token) {
-        try {
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-            await axios.post('http://localhost:5000/api/v1/chat/send', { message: text }, config);
-        } catch (error) {
-            console.error("Failed to send message:", error);
-            setMessages(prev => [...prev, { sender: 'admin', text: "Error: Could not send message."}]);
-        }
+    // Determine session ID for sending
+    let sessionId;
+    if (user) {
+      sessionId = user.id;
+    } else {
+      sessionId = sessionStorage.getItem('guestId');
+      if (!sessionId) {
+        // This should theoretically not happen if the useEffect runs first, but as a fallback
+        sessionId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+        sessionStorage.setItem('guestId', sessionId);
+      }
     }
 
-    // Simulate admin reply for immediate user feedback
-    setTimeout(() => {
-      let replyText = "Thanks for your message! An admin will be with you shortly.";
-      if (text === "What is Atlas Core?") {
-        replyText = "AtlasCore is an epic minecraft server.";
-      }
+    try {
+        const payload = { message: text, userId: sessionId }; // Always send userId for guest too
+        if (!user) { // If it's a guest, explicitly send guestId
+            payload.guestId = sessionId;
+            delete payload.userId; // Ensure userId is not sent for guests
+        }
 
-      const adminMessage = { sender: 'admin', text: replyText };
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        adminMessage,
-      ]);
-    }, 1000);
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        await axios.post('http://localhost:5000/api/v1/chat/send', payload, { headers });
+        // Messages will be updated by the onSnapshot listener, so no manual update here.
+        setInputValue('');
+    } catch (error) {
+        console.error("Failed to send message:", error);
+        // Display error message in chat
+        setMessages(prev => [...prev, { sender: 'system', message: "Error: Could not send message."}]);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -140,7 +158,13 @@ const LiveChat = ({ user, isAdmin }) => {
           <div className="chat-messages">
             {messages.map((msg, index) => (
               <div key={index} className={`message ${msg.sender}`}>
-                <p>{msg.text || msg.message}</p>
+                {/* Display sender name and timestamp */}
+                <p className="message-sender">{msg.sender === 'user' ? (user ? user.username : 'You') : 'Admin'}</p>
+                <p className="message-content">{msg.text || msg.message}</p>
+                {/* FIX: Moved timestamp below message content */}
+                <span className="message-timestamp-text">
+                  {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                </span>
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -156,7 +180,7 @@ const LiveChat = ({ user, isAdmin }) => {
             <input
               type="text"
               value={inputValue}
-              onChange={handleInputChange}
+              onChange={(e) => setInputValue(e.target.value)}
               placeholder="Type your message..."
               autoFocus
             />
