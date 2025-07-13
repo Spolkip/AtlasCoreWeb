@@ -1,3 +1,4 @@
+// frontend/src/App.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import axios from 'axios';
@@ -23,7 +24,7 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import Wiki from './components/Wiki';
 import AdminWiki from './components/AdminWiki';
-import LiveChat from './components/LiveChat'; // Import LiveChat
+import LiveChat from './components/LiveChat'; 
 import AdminChat from './components/AdminChat'; // Import AdminChat
 
 import './css/App.css';
@@ -161,7 +162,8 @@ function App() {
                 <Route path="/admin" element={<AddProducts />} />
                 <Route path="/admin-dashboard" element={<AdminDashboard user={user} />} />
                 <Route path="/admin/wiki" element={<AdminWiki />} />
-                <Route path="/admin/chat" element={<AdminChat />} />
+                {/* NEW: Pass the user prop to AdminChat component */}
+                <Route path="/admin/chat" element={<AdminChat user={user} />} /> 
               </>
             )}
 
