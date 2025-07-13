@@ -46,6 +46,31 @@ exports.authorizeAdmin = (req, res, next) => {
   next();
 };
 
+// Middleware to identify user or allow guest access
+exports.identifyUser = async (req, res, next) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (token) {
+    try {
+      // Verify token if it exists
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id);
+    } catch (error) {
+      // Token is invalid, proceed as a guest
+      req.user = null;
+    }
+  } else {
+    // No token, proceed as a guest
+    req.user = null;
+  }
+  next();
+};
+
+
 /**
  * NEW MIDDLEWARE
  * @desc    Verify a secret key for server-to-server communication

@@ -1,13 +1,17 @@
 const Chat = require('../models/Chat');
 const User = require('../models/User');
 
-// @desc    Get chat history for a user
+// @desc    Get chat history for a user or guest
 // @route   GET /api/v1/chat/history
-// @access  Private
+// @access  Public/Private
 exports.getChatHistory = async (req, res) => {
   try {
-    const userId = req.query.userId || req.user.id;
-    const messages = await Chat.findByUserId(userId);
+    // Admin can request history for a specific user, otherwise use the logged-in user/guest
+    const sessionId = (req.user && req.user.isAdmin && req.query.userId) ? req.query.userId : (req.user ? req.user.id : req.query.guestId);
+    if (!sessionId) {
+        return res.status(400).json({ success: false, message: 'User or guest ID is required.' });
+    }
+    const messages = await Chat.findByUserId(sessionId);
     res.status(200).json({ success: true, messages });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
@@ -16,21 +20,48 @@ exports.getChatHistory = async (req, res) => {
 
 // @desc    Send a message
 // @route   POST /api/v1/chat/send
-// @access  Private
+// @access  Public/Private
 exports.sendMessage = async (req, res) => {
   try {
-    const { message, userId } = req.body;
-    const sender = req.user.isAdmin ? 'admin' : 'user';
-    const messageUserId = req.user.isAdmin ? userId : req.user.id;
+    const { message, userId: targetUserId, guestId } = req.body;
+    let sender;
+    let chatSessionId;
+
+    if (!message) {
+        return res.status(400).json({ success: false, message: 'Message content cannot be empty.' });
+    }
+
+    if (req.user && req.user.isAdmin) {
+        // Case 1: An admin is sending a message.
+        sender = 'admin';
+        // The message should be associated with the user they are replying to.
+        chatSessionId = targetUserId; 
+        if (!chatSessionId) {
+            return res.status(400).json({ success: false, message: 'Target user ID is required for admin replies.' });
+        }
+    } else if (req.user) {
+        // Case 2: A logged-in user is sending a message.
+        sender = 'user';
+        chatSessionId = req.user.id;
+    } else {
+        // Case 3: A guest is sending a message.
+        sender = 'user';
+        chatSessionId = guestId;
+        if (!chatSessionId) {
+            return res.status(400).json({ success: false, message: 'Guest ID is required for unauthenticated users.' });
+        }
+    }
 
     const newMessage = new Chat({
-      userId: messageUserId,
+      userId: chatSessionId, // Use the correct session ID
       message,
       sender,
     });
+
     await newMessage.save();
     res.status(201).json({ success: true, message: newMessage });
   } catch (error) {
+    console.error("Error in sendMessage:", error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -41,17 +72,22 @@ exports.sendMessage = async (req, res) => {
 exports.getChatSessions = async (req, res) => {
     try {
         const activeSessions = await Chat.findActiveSessions();
-        const sessionsWithUserDetails = await Promise.all(
-            activeSessions.map(async (session) => {
-                const user = await User.findById(session.userId);
-                return {
+        const sessionsWithUserDetails = [];
+
+        for (const session of activeSessions) {
+            const user = await User.findById(session.userId);
+            // Only include sessions from non-admin users or guests
+            if (!user || user.is_admin !== 1) {
+                sessionsWithUserDetails.push({
                     userId: session.userId,
-                    username: user ? user.username : 'Unknown User',
+                    username: user ? user.username : `Guest (${session.userId.substring(0, 6)})`,
                     lastMessage: session.lastMessage,
                     lastMessageTimestamp: session.lastMessageTimestamp,
-                };
-            })
-        );
+                    isGuest: !user
+                });
+            }
+        }
+        
         res.status(200).json({ success: true, sessions: sessionsWithUserDetails });
     } catch (error) {
         console.error('Error fetching chat sessions:', error);
