@@ -15,10 +15,9 @@ const orderRoutes = require('./routes/orderRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const serverRoutes = require('./routes/serverRoutes');
-// ---- START OF FIX: Import the new player stats route ----
 const playerStatsRoutes = require('./routes/playerStatsRoutes');
 const wikiRoutes = require('./routes/wikiRoutes');
-// ---- END OF FIX ----
+const chatRoutes = require('./routes/chatRoutes'); // Import chat routes
 
 const app = express();
 
@@ -33,10 +32,9 @@ app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/server', serverRoutes);
-// ---- START OF FIX: Mount the new player stats route ----
 app.use('/api/v1/player-stats', playerStatsRoutes);
 app.use('/api/v1/wiki', wikiRoutes);
-// ---- END OF FIX ----
+app.use('/api/v1/chat', chatRoutes); // Mount chat routes
 
 app.use(errorHandler);
 

@@ -23,6 +23,8 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import Wiki from './components/Wiki';
 import AdminWiki from './components/AdminWiki';
+import LiveChat from './components/LiveChat'; // Import LiveChat
+import AdminChat from './components/AdminChat'; // Import AdminChat
 
 import './css/App.css';
 
@@ -159,6 +161,7 @@ function App() {
                 <Route path="/admin" element={<AddProducts />} />
                 <Route path="/admin-dashboard" element={<AdminDashboard user={user} />} />
                 <Route path="/admin/wiki" element={<AdminWiki />} />
+                <Route path="/admin/chat" element={<AdminChat />} />
               </>
             )}
 
@@ -168,6 +171,7 @@ function App() {
           </Routes>
         </main>
         <Footer storeName={settings?.store_name} />
+        <LiveChat user={user} isAdmin={isAdmin} />
       </div>
     </Router>
   );

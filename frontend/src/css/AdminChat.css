@@ -1,0 +1,82 @@
+/* AdminChat.css */
+
+.admin-chat-container {
+    display: flex;
+    height: 80vh;
+    max-width: 1200px;
+    margin: 2rem auto;
+    border: 3px solid #000;
+    font-family: 'VT323', monospace;
+    background-color: #2c2c2c;
+}
+
+.session-list {
+    width: 300px;
+    border-right: 2px solid #000;
+    overflow-y: auto;
+    background-color: #1a1a1a;
+}
+
+.session-list h2 {
+    color: #FFAA00;
+    text-align: center;
+    padding: 15px;
+    margin: 0;
+    border-bottom: 2px solid #000;
+    font-size: 1.8rem;
+}
+
+.session-item {
+    padding: 15px;
+    border-bottom: 1px solid #444;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.session-item:hover {
+    background-color: #3a3a3a;
+}
+
+.session-item.active {
+    background-color: #3498db;
+}
+
+.session-username {
+    font-weight: bold;
+    color: #FFFF55;
+    margin: 0 0 5px;
+    font-size: 1.2rem;
+}
+
+.session-last-message {
+    color: #ccc;
+    margin: 0;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-chat-messages {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.no-session-selected {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: #ccc;
+    font-size: 1.5rem;
+}
