@@ -1,13 +1,16 @@
-// backend/routes/orderRoutes.js
+// backend/routes/publicProfileRoutes.js
 const express = require('express');
 const router = express.Router();
-const orderController = require('../controllers/orderController');
-const { protect } = require('../middleware/auth');
+const { searchUsers, getPublicProfile } = require('../controllers/publicProfileController');
 
-// Make sure all route handlers are properly referenced from orderController
-router.post('/', protect, orderController.createOrder);
-router.get('/execute', protect, orderController.executePayment);
-router.get('/my-orders', protect, orderController.getMyOrders);
-router.post('/cancel', protect, orderController.cancelOrder);
+// @route   GET /api/v1/public-profiles/search/:username
+// @desc    Search for users by username
+// @access  Public
+router.get('/search/:username', searchUsers);
+
+// @route   GET /api/v1/public-profiles/:username
+// @desc    Get a user's public profile
+// @access  Public
+router.get('/:username', getPublicProfile);
 
 module.exports = router;
