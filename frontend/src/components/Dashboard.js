@@ -10,7 +10,7 @@ const Dashboard = ({ user }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    useEffect(() => {
+      useEffect(() => {
         if (!user) {
             setLoading(false);
             return;
@@ -23,8 +23,8 @@ const Dashboard = ({ user }) => {
             const config = { headers: { Authorization: `Bearer ${token}` } };
 
             try {
-                // This endpoint provides the recent activity feed
-                const response = await axios.get('http://localhost:5000/api/v1/users/dashboard', config);
+                // FIX: Corrected the endpoint from /api/v1/users/dashboard to /api/v1/profile
+                const response = await axios.get('http://localhost:5000/api/v1/profile', config);
                 if (response.data.success) {
                     setActivityFeed(response.data.data.activityFeed);
                 } else {
