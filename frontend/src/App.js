@@ -1,9 +1,9 @@
 // frontend/src/App.js
-import React, { useState, useEffect, useCallback } from 'react'; // FIX: Corrected import syntax
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import axios from 'axios';
-import { initializeApp } from 'firebase/app'; // Import initializeApp
-import { getFirestore } from 'firebase/firestore'; // Import getFirestore
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
 
 // Import Components
 import NavBar from './components/NavBar';
@@ -20,6 +20,7 @@ import OrderHistory from './components/OrderHistory';
 import ForgotPassword from './components/ForgotPassword';
 import LinkMinecraft from './components/LinkMinecraft';
 import Dashboard from './components/Dashboard';
+import CharacterProfile from './components/CharacterProfile'; // Import the new component
 import AdminDashboard from './components/AdminDashboard';
 import Footer from './components/Footer';
 import PrivacyPolicy from './components/PrivacyPolicy';
@@ -27,24 +28,22 @@ import TermsOfService from './components/TermsOfService';
 import Wiki from './components/Wiki';
 import AdminWiki from './components/AdminWiki';
 import LiveChat from './components/LiveChat'; 
-import AdminChat from './components/AdminChat'; // Import AdminChat
+import AdminChat from './components/AdminChat';
 
 import './css/App.css';
 
-// Client-side Firebase configuration (using your actual values)
+// Client-side Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDVJv5KBf7DiFxLPw7-DaR0sQNGZd5zko8",
   authDomain: "atlascoreweb.firebaseapp.com",
   projectId: "atlascoreweb",
-  storageBucket: "atlascoreweb.firebasestorage.app",
+  storageBucket: "atlascoreweb.appspot.com",
   messagingSenderId: "1017567515762",
   appId: "1:1017567515762:web:a16e81b3cf33287db3deeb",
 };
 
-// Initialize Firebase App and Firestore for the frontend
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
-
 
 function App() {
   const [user, setUser] = useState(null);
@@ -55,7 +54,6 @@ function App() {
   const [exchangeRates, setExchangeRates] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Memoize handleLogout to ensure it's a stable dependency for useEffect.
   const handleLogout = useCallback(() => {
     setUser(null);
     setIsAuthenticated(false);
@@ -83,7 +81,6 @@ function App() {
 
       } catch (error) {
         console.error("Could not fetch initial data", error);
-        // Use functional update to avoid dependency on settings state
         setSettings(s => s || { store_name: 'AtlasCore', currency: 'USD' });
       } finally {
         setLoading(false);
@@ -140,7 +137,6 @@ function App() {
         <main className="content">
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            
             <Route 
               path="/shop" 
               element={<ProductList 
@@ -152,12 +148,9 @@ function App() {
                 exchangeRates={exchangeRates} 
               />} 
             />
-            
             <Route path="/login" element={<Login onLoginSuccess={handleLogin} />} />
             <Route path="/register" element={<Register onLoginSuccess={handleLogin} />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            
-            {/* Updated Wiki Routes */}
             <Route path="/wiki" element={<Wiki user={user} />}>
               <Route path=":type/:id" element={<Wiki user={user} />} />
             </Route>
@@ -165,12 +158,13 @@ function App() {
             {isAuthenticated && (
               <>
                 <Route path="/dashboard" element={<Dashboard user={user} onUserUpdate={handleUserUpdate} />} />
+                <Route path="/profile" element={<CharacterProfile user={user} />} />
                 <Route path="/settings" element={<Settings user={user} onSettingsUpdate={updateSettings} />} />
                 <Route path="/checkout" element={<Checkout cart={cart} user={user} settings={settings} exchangeRates={exchangeRates} />} />
                 <Route path="/payment/success" element={<PaymentSuccess />} />
                 <Route path="/payment/cancel" element={<PaymentCancel />} />
                 <Route path="/order-history" element={<OrderHistory user={user} />} />
-                <Route path="/link-minecraft" element={<LinkMinecraft user={user} onLoginSuccess={handleLogin} />} />
+                <Route path="/link-minecraft" element={<LinkMinecraft onLoginSuccess={handleLogin} />} />
               </>
             )}
 
@@ -179,7 +173,6 @@ function App() {
                 <Route path="/admin" element={<AddProducts />} />
                 <Route path="/admin-dashboard" element={<AdminDashboard user={user} />} />
                 <Route path="/admin/wiki" element={<AdminWiki />} />
-                {/* NEW: Pass the user prop and db instance to AdminChat component */}
                 <Route path="/admin/chat" element={<AdminChat user={user} db={db} />} /> 
               </>
             )}

@@ -15,14 +15,14 @@ const orderRoutes = require('./routes/orderRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const serverRoutes = require('./routes/serverRoutes');
-const playerStatsRoutes = require('./routes/playerStatsRoutes');
 const wikiRoutes = require('./routes/wikiRoutes');
-const chatRoutes = require('./routes/chatRoutes'); // Import chat routes
+const chatRoutes = require('./routes/chatRoutes');
+const characterProfileRoutes = require('./routes/characterProfileRoutes');
 
 const app = express();
 
 app.use(express.json());
-app.use(cors()); // Enable CORS for all backend routes
+app.use(cors());
 
 // Mount routers
 app.use('/api/v1/auth', authRoutes);
@@ -32,9 +32,9 @@ app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/server', serverRoutes);
-app.use('/api/v1/player-stats', playerStatsRoutes);
 app.use('/api/v1/wiki', wikiRoutes);
-app.use('/api/v1/chat', chatRoutes); // Mount chat routes
+app.use('/api/v1/chat', chatRoutes);
+app.use('/api/v1/profile', characterProfileRoutes);
 
 app.use(errorHandler);
 

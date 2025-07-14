@@ -71,6 +71,9 @@
 
 .action-buttons {
   margin-top: 15px;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .stats-grid {
